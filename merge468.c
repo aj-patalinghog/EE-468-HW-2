@@ -1,4 +1,6 @@
 /* 
+ * Written by AJ Patalinghog
+ *
  * This is an implementation of merge sort assuming the
  * data is an array a[] of length N, and N is a power of 2.
  *
@@ -24,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #define N 32 
 
@@ -33,19 +36,21 @@ int temp[N];  // Temporary storage
 
 void genvalues(int n); // Initializes array a[]
 void prnvalues(int n); // Prints array a[]
-void merge(int first, int midpt, int last); // Merges subarrays
+void *merge(void * args); // Merges subarrays
 
-main() {
+struct Info {
+   pthread_t thread;
+   int index;
+   int arrsize;
+};
+
+int main() {
 
    int arrsize;     // Size of subarrays to merge
    int numarr;      // Number of subarrays
    int newarrsize;  // New subarray size
    int newnumarr;   // New number of subarrays
    int i;
-   int first;       // Parameters used to merge two subarrays
-   int midpt;       //   The first subarray starts at "first" and ends 
-   int last;        //   at "first+midpt-1".  The second subarray starts
-                    //   at "first+midpt" and ends at "last-1"
 
    genvalues(N);    // Initialize a[] with random values
    printf("Initial values:\n");
@@ -56,12 +61,19 @@ main() {
    while (arrsize < N) {
       printf("*** Merging subarrays of size %d\n",arrsize);
       arrsize= 2*arrsize; // merge subarrays to double subarray size
-      for (i=0; i<N; i+=arrsize) {
-         first = i;
-         midpt = first +(arrsize/2);
-         if (first + arrsize < N) last = first + arrsize;
-         else last = N;
-         merge(first, midpt, last);
+      int numThreads = N/arrsize;
+      struct Info info[numThreads];
+      for(int i = 0; i < numThreads; i++) {
+         info[i].index = i;
+         info[i].arrsize = arrsize;
+         printf("Creating thread %d of %d\n", i+1, numThreads);
+         if(pthread_create(&(info[i].thread), NULL, merge, (void *)(&info[i])) != 0) {
+            perror("Error with creating threads.\n");
+            exit(1);
+         }
+      }
+      for(int i = 0; i < numThreads; i++) {
+         pthread_join(info[i].thread, NULL);
       }
    }
 
@@ -77,11 +89,20 @@ main() {
  *    a[first],..., a[last-1].
  */
 
-void merge(int first, int midpt, int last) {
+void *merge(void * args) {
    int leftptr;   // Pointers used in array a[ ]
    int rightptr;
    int k;         // pointer used in array temp[ ]
    int delay;
+   int first;     // Parameters used to merge two subarrays
+   int midpt;     //   The first subarray starts at "first" and ends 
+   int last;      //   at "first+midpt-1".  The second subarray starts
+                  //   at "first+midpt" and ends at "last-1"
+
+   struct Info * info = (struct Info *)args;
+   first = info->index * info->arrsize;
+   midpt = first +(info->arrsize/2);
+   last = (first + info->arrsize < N) ? first + info->arrsize : N;
 
    /*
     * Do not delete the next three lines.  They cause the function to
