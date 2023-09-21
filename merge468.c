@@ -34,9 +34,9 @@
 int a[N];     // Array to sort
 int temp[N];  // Temporary storage
 
-void genvalues(int n); // Initializes array a[]
-void prnvalues(int n); // Prints array a[]
-void *merge(void * args); // Merges subarrays
+void genvalues(int n);     // Initializes array a[]
+void prnvalues(int n);     // Prints array a[]
+void * merge(void * args); // Merges subarrays
 
 struct Info {
    pthread_t thread;
@@ -45,28 +45,20 @@ struct Info {
 };
 
 int main() {
-
-   int arrsize;     // Size of subarrays to merge
-   int numarr;      // Number of subarrays
-   int newarrsize;  // New subarray size
-   int newnumarr;   // New number of subarrays
-   int i;
-
-   genvalues(N);    // Initialize a[] with random values
+   int arrsize = 1;  // Size of subarrays to merge
    printf("Initial values:\n");
-   prnvalues(N);    // Display the values
-
-   arrsize = 1;
+   genvalues(N);     // Initialize a[] with random values
+   prnvalues(N);     // Display the values
 
    while (arrsize < N) {
-      printf("*** Merging subarrays of size %d\n",arrsize);
-      arrsize= 2*arrsize; // merge subarrays to double subarray size
-      int numThreads = N/arrsize;
+      printf("*** Merging subarrays of size %d\n", arrsize);
+      arrsize = 2 * arrsize; // merge subarrays to double subarray size
+      int numThreads = N / arrsize;
       struct Info info[numThreads];
       for(int i = 0; i < numThreads; i++) {
+         // printf("Creating thread %d of %d\n", i + 1, numThreads);
          info[i].index = i;
          info[i].arrsize = arrsize;
-         printf("Creating thread %d of %d\n", i+1, numThreads);
          if(pthread_create(&(info[i].thread), NULL, merge, (void *)(&info[i])) != 0) {
             perror("Error with creating threads.\n");
             exit(1);
@@ -89,7 +81,7 @@ int main() {
  *    a[first],..., a[last-1].
  */
 
-void *merge(void * args) {
+void * merge(void * args) {
    int leftptr;   // Pointers used in array a[ ]
    int rightptr;
    int k;         // pointer used in array temp[ ]
@@ -101,7 +93,7 @@ void *merge(void * args) {
 
    struct Info * info = (struct Info *)args;
    first = info->index * info->arrsize;
-   midpt = first +(info->arrsize/2);
+   midpt = first + (info->arrsize / 2);
    last = (first + info->arrsize < N) ? first + info->arrsize : N;
 
    /*
@@ -109,46 +101,40 @@ void *merge(void * args) {
     * delay by a amount that is proportional to the subarray it is merging
     */
    
-   if (last-first > 0) delay = last-first;
-   else delay = 1;
-   usleep(delay*250000);
+   delay = (last - first > 0) ? last - first : 1;
+   usleep(delay * 250000);
 
    leftptr = first;
    rightptr = midpt; 
 
    // Merge values in the two arrays of a[] into temp[]
-   for(k=first; k<last; k++) {
-      if (leftptr >= midpt) temp[k] = a[rightptr++];
-      else if (rightptr >= last) temp[k] = a[leftptr++];
-      else if (a[leftptr] < a[rightptr]) temp[k] = a[leftptr++];
-      else if (a[leftptr] >= a[rightptr]) temp[k] = a[rightptr++];
+   for(k = first; k < last; k++) {
+      if(leftptr >= midpt) temp[k] = a[rightptr++];
+      else if(rightptr >= last) temp[k] = a[leftptr++];
+      else if(a[leftptr] < a[rightptr]) temp[k] = a[leftptr++];
+      else if(a[leftptr] >= a[rightptr]) temp[k] = a[rightptr++];
       else printf("There's a bug \n");
    }
 
    // Copy temp[] back to a[]
-   for(k=first; k<last; k++) a[k] = temp[k];
+   for(k = first; k < last; k++) a[k] = temp[k];
 }
 
 // Initializes array a[] with random values.
 void genvalues(int n) {
-   int k;
-   int i;
-   int current; 
-
-   k = 2*n;
-   current = 0;
-   for (i=0; i<n; i++) {
-      current = (current*73 + 19)%k;
+   int k = 2 * n;
+   int current = 0;
+   for(int i = 0; i < n; i++) {
+      current = (current * 73 + 19) % k;
       a[i] = current;
    }
 }
 
 // Prints the values in the array a[]
 void prnvalues(int n) {
-   int i;
-   for (i=0; i<n; i++) {
+   for(int i = 0; i < n; i++) {
       printf(" %d ", a[i]);
-      if ((i+1)%10 == 0) printf("\n");
+      if((i + 1) % 10 == 0) printf("\n");
    }
    printf("\n");
 }
